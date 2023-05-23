@@ -2,22 +2,22 @@ import { useState } from "react";
 import {
     createAuthUserWithEmailAndPassword,
     createUserDocumentFromAuth,
+    signInAuthUserWithEmailAndPassword,
+    signInWithGooglePopup,
 } from "../../utils/firebase.utils.js";
 
 import FormInput from "../form-input/form-input.component.jsx";
-import "./sign-up-form.styles.scss";
+import "./sign-in-form.styles.scss";
 import Button from "../button/button.component.jsx";
 
 const defaultFormFields = {
-    displayName: "",
     email: "",
     password: "",
-    confirmPassword: "",
 };
 
-const SignUpForm = () => {
+const SignInForm = () => {
     const [formFields, setFormFields] = useState(defaultFormFields);
-    const { displayName, email, password, confirmPassword } = formFields;
+    const { email, password } = formFields;
     const handleChange = (event) => {
         const { name, value } = event.target;
         setFormFields({ ...formFields, [name]: value });
@@ -27,41 +27,40 @@ const SignUpForm = () => {
         setFormFields(defaultFormFields);
     };
 
+    const signInWithGoogle = async () => {
+        const { user } = await signInWithGooglePopup();
+        await createUserDocumentFromAuth(user);
+    };
+
     const handleSubmit = async (event) => {
         event.preventDefault();
-        if (password !== confirmPassword) {
-            alert("Password do not match");
-            return;
-        }
         try {
-            const { user } = await createAuthUserWithEmailAndPassword(
+            const response = await signInAuthUserWithEmailAndPassword(
                 email,
                 password
             );
-
-            await createUserDocumentFromAuth(user, { displayName });
             resetFormFields();
         } catch (error) {
-            if (error.code === "auth/email-already-in-use") {
-                alert("Can not create user, email already in use");
+            switch (error.code) {
+                case "auth/wrong-password":
+                    alert("Incorrect password for email");
+                    break;
+
+                case "auth/user-not-found":
+                    alert("no user associated with this email");
+                    break;
+
+                default:
+                    console.log(error);
             }
-            console.log("user creation encountered an error", error);
+            console.log(error);
         }
     };
-
     return (
         <div className="sign-up-container">
-            <h2>Don't have an account?</h2>
+            <h2>Already have an account?</h2>
             <span>Sign up with your email and password</span>
             <form onSubmit={handleSubmit}>
-                <FormInput
-                    label="Name"
-                    type="text"
-                    onChange={handleChange}
-                    name="displayName"
-                    value={displayName}
-                    required
-                />
                 <FormInput
                     label="Email"
                     type="email"
@@ -70,7 +69,6 @@ const SignUpForm = () => {
                     value={email}
                     required
                 />
-
                 <FormInput
                     label="Password"
                     type="password"
@@ -79,22 +77,19 @@ const SignUpForm = () => {
                     value={password}
                     required
                 />
-
-                <FormInput
-                    label="Confirm Password"
-                    type="password"
-                    onChange={handleChange}
-                    name="confirmPassword"
-                    value={confirmPassword}
-                    required
-                />
-
-                <Button buttonType="inverted" type="submit">
-                    Sign Up
-                </Button>
+                <div className="buttons-container">
+                    <Button type="submit">Sign In</Button>
+                    <Button
+                        onClick={signInWithGoogle}
+                        buttonType="google"
+                        type="button"
+                    >
+                        Google Sign In
+                    </Button>
+                </div>
             </form>
         </div>
     );
 };
 
-export default SignUpForm;
+export default SignInForm;
