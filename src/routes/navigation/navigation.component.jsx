@@ -8,11 +8,6 @@ import "./navigation.styles.scss";
 
 const Navigation = () => {
     const { currentUser } = useContext(UserContext);
-    // console.log(currentUser);
-    const signOutHandler = async () => {
-        const response = await signOutUser();
-        console.log(response);
-    }
 
     return (
         <Fragment>
